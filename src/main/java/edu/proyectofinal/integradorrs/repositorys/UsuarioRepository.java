@@ -16,11 +16,14 @@ public interface UsuarioRepository extends MongoRepository<Usuario, String> {
      * @return
      */
 	
+	//implementar Async queries para campos pesados http://docs.spring.io/spring-data/mongodb/docs/current/reference/html/#repositories.query-methods.query-lookup-strategies
 	
     @Query("{ 'email' : ?0}")
     public Usuario findByEmail(String email);
-   
+    @Query("{ 'id' : ?0}")
+    public Usuario findById(String id);
+    @Query("{ 'nickname':?0}")
+    public Usuario findByNickname(String nickname);
+    
 	
-	
-
 }

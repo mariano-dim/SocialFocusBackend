@@ -3,8 +3,10 @@ package edu.proyectofinal.integradorrs.controllers;
 import java.util.Collection;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,11 +14,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import edu.proyectofinal.integradorrs.exceptions.EmptyResultException;
 import edu.proyectofinal.integradorrs.model.Token;
 import edu.proyectofinal.integradorrs.model.Usuario;
 import edu.proyectofinal.integradorrs.services.usuario.UsuarioService;
+import edu.proyectofinal.integradorrs.services.usuario.impl.UsuarioServiceMongo;
 
 @RestController
 
@@ -26,12 +30,12 @@ public class LoginController extends AbstractController<Usuario> {
 	
 	
 	@Autowired
-    private UsuarioService usuarioService;
+    private UsuarioServiceMongo usuarioService;
 	
 	 @RequestMapping(method = RequestMethod.GET, value="/greeting")
 	    public String greeting() {
 
-		 return "Hello"+usuarioService.getById("1").getNombre();
+		 return "Hello"+usuarioService.getById("1").getUsername();
 
 	    }
 	 
@@ -130,12 +134,20 @@ public class LoginController extends AbstractController<Usuario> {
     }
     
 @ResponseBody @RequestMapping(method = RequestMethod.POST, value="/newuser")
-    public String newuser(@RequestBody Usuario user) {
+    public ResponseEntity<Void> newuser(@RequestBody Usuario user, UriComponentsBuilder ucBuilder) {
 
-        Usuario newuser = user;
-    	usuarioService.saveUser(user);
-
-        return newuser.toString();
+	  if (usuarioService.userExists(user)) {
+          System.out.println("A User with name " + user.getUsername() + " already exist");
+          return new ResponseEntity<Void>(HttpStatus.CONFLICT);
+      }
+	  
+        usuarioService.saveUser(user);
+    	
+    	HttpHeaders headers = new HttpHeaders();
+        headers.setLocation(ucBuilder.path("/user/{id}").buildAndExpand(user.getId()).toUri());
+        return new ResponseEntity<Void>(headers, HttpStatus.CREATED);
 
     }
+
+
 }

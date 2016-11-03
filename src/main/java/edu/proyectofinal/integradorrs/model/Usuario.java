@@ -1,17 +1,28 @@
 package edu.proyectofinal.integradorrs.model;
 
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import edu.proyectofinal.integradorrs.configurations.Role;
 
 @Document(collection = "usuarios")
-public class Usuario {
+public class Usuario implements UserDetails {
 	
+	private static final long serialVersionUID = 1L;
+	private boolean nonCredsexpired = false;
 	@Field
-	private String nombre;
+	private String username;
+	@Field
+    private String password;
 	@Field
 	private String apellido;
 	@Field
@@ -39,16 +50,30 @@ public class Usuario {
     private String calle;
     @Field
     private ConcurrentHashMap<String, Long> cuentas;
-
-    public Usuario() {
-        super();
-    }
-
-    public Usuario(String id, String email, String clave, Date creationDate, String telefono,
+    @Field
+    private Collection<SimpleGrantedAuthority> authorities;
+    @Field
+    private Usuario user;
+    @Field
+	private boolean nonAccexpired;
+    @Field
+	private boolean nonlocked;
+    @Field
+	private boolean enabled;
+ 
+    public Usuario(String id, String email,String nickname,String password,String role,  String clave, Date creationDate, String telefono,
             Date fechaNacimiento, String pais, String provincia, String ciudad, String calle) {
-        super();
+    	super();
+    	/*
+    	Role aux = new Role(role);
+    	List<Role> aux2 = null;
+    	
+    	aux2.add(aux);*/
         this.id = id;
         this.email = email;
+        this.nickname = nickname;
+        this.password = password;
+        //this.authorities = aux2;
         this.clave = clave;
         this.creationDate = creationDate;
         this.telefono = telefono;
@@ -56,21 +81,47 @@ public class Usuario {
         this.pais = pais;
         this.provincia = provincia;
         this.ciudad = ciudad;
-        this.calle = calle;
+        this.calle = calle;        
         this.cuentas = new ConcurrentHashMap<String,Long>();
     }
-
-    public String getNombre() {
-    	return nombre;
+    
+    public Usuario(Usuario user){
+    	this.user = user;
+    	this.user.setAccountExpired(user.isAccountNonExpired());
+    	user.enabled = true;
+    	user.nonlocked = true;
+    	user.nonCredsexpired = true;
+    	SimpleGrantedAuthority adminAuthority = new SimpleGrantedAuthority(
+				"ROLE_ADMIN");
+		
     }
+    
+    public Usuario(){
+       	this.user = user;
+    	this.nonAccexpired = true;
+    	this.enabled = true;
+    	this.nonlocked = true;
+    	this.nonCredsexpired = true;
+    }
+    
+    
+    public Usuario(String id,String nickname, String password,String role){
+    	this.id = id;
+    	this.nickname = nickname;
+    	this.password = password;
+    	SimpleGrantedAuthority adminAuthority = new SimpleGrantedAuthority(
+				"ROLE_ADMIN");
+		((Collection<SimpleGrantedAuthority>) authorities).add(adminAuthority);
+    }
+
     public String getApellido() {
-    	return nombre;
+    	return this.apellido;
     }
     public String getNickname() {
-    	return nombre;
+    	return this.nickname;
     }
     public String getId() {
-        return id;
+        return this.id;
     }
 
     public void setId(String id) {
@@ -78,7 +129,7 @@ public class Usuario {
     }
 
     public String getEmail() {
-        return email;
+        return this.email;
     }
 
     public void setEmail(String email) {
@@ -86,7 +137,7 @@ public class Usuario {
     }
 
     public Date getCreationDate() {
-        return creationDate;
+        return this.creationDate;
     }
 
     public void setCreationDate(Date creationDate) {
@@ -94,7 +145,7 @@ public class Usuario {
     }
 
     public String getTelefono() {
-        return telefono;
+        return this.telefono;
     }
 
     public void setTelefono(String telefono) {
@@ -110,7 +161,7 @@ public class Usuario {
     }
 
     public String getPais() {
-        return pais;
+        return this.pais;
     }
 
     public void setPais(String pais) {
@@ -149,11 +200,23 @@ public class Usuario {
         this.clave = clave;
     }
     
-    public void setNombre(String nombre) {
-    	this.nombre = nombre;
+    public void setUsername(String nombre) {
+    	this.username = nombre;
     }
     public void addCuenta(String nombre_cuenta, Long id_cuenta) {
     	this.cuentas.putIfAbsent(nombre_cuenta, id_cuenta);
+    }
+    
+    public void setAccountExpired(boolean valor) {
+    	this.nonAccexpired = valor;
+    }
+    
+    public void setAccountLocked(boolean valor) {
+    	this.nonlocked = valor;
+    }
+    
+    public void setCredExpired(boolean valor) {
+    	this.nonCredsexpired = valor;
     }
 
 //    @Override
@@ -165,6 +228,9 @@ public class Usuario {
     public String toString() {
         StringBuilder str = new StringBuilder();
         str.append(" id:- ").append(this.getId());
+        str.append(" nickname:- ").append(this.getNickname());
+        str.append(" password:- ").append(this.getPassword());
+        str.append(" authorities:- ").append(this.getAuthorities());
         str.append(" email:- ").append(this.getEmail());
         str.append(" creationDate:- ").append(this.getCreationDate());
         str.append(" telefono:- ").append(this.getTelefono() );
@@ -173,7 +239,52 @@ public class Usuario {
         str.append(" provincia:- ").append(this.getProvincia());
         str.append(" ciudad:- ").append(this.getCiudad());
         str.append(" calle:- ").append(this.getCalle());
+        
 
          return str.toString();
     }
+
+	@Override
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		return this.authorities;
+	}
+	
+	public void setAuthorities(Role rol) {
+		SimpleGrantedAuthority adminAuthority = new SimpleGrantedAuthority("ROLE_ADMIN");
+    	user.authorities.add(adminAuthority);
+	}
+	
+	@Override
+	public String getPassword() {
+		return this.password;
+	}
+
+	@Override
+	public String getUsername() {
+
+		return this.username;
+	}
+
+	@Override
+	public boolean isAccountNonExpired() {
+		return this.nonAccexpired;
+	}
+
+	@Override
+	public boolean isAccountNonLocked() {
+		return this.nonlocked;
+	}
+
+	@Override
+	public boolean isCredentialsNonExpired() {
+		return this.nonCredsexpired;
+	}
+
+	@Override
+	public boolean isEnabled() {
+		return this.enabled;
+
+	}
+	
+	
 }

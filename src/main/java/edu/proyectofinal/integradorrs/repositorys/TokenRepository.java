@@ -6,7 +6,7 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 import edu.proyectofinal.integradorrs.model.Token;
 
-@RepositoryRestResource(collectionResourceRel = "tokens", path = "tokens")
+//@RepositoryRestResource(collectionResourceRel = "tokens", path = "tokens")
 public interface TokenRepository extends MongoRepository<Token, String> {
 
     
